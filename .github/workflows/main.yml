@@ -1,0 +1,31 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unzip project
+        run: unzip RoseController-Prototype-0.6.zip -d project
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build APK
+        working-directory: project/project
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rose-Controller-APK
+          path: project/project/app/build/outputs/apk/debug/*.apk
