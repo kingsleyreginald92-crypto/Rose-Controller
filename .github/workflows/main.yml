@@ -39,6 +39,18 @@ jobs:
           echo "Building from: $PROJECT_DIR"
           cd "$PROJECT_DIR"
 
+          APP_BUILD_FILE="$(find . -type f -path "*/app/build.gradle.kts" -print -quit)"
+
+          if [ -z "$APP_BUILD_FILE" ]; then
+            echo "app/build.gradle.kts not found"
+            find . -type f -name "build.gradle.kts" | sort
+            exit 1
+          fi
+
+          echo "Removing obsolete Kotlin Android plugin from: $APP_BUILD_FILE"
+          sed -i '/org\.jetbrains\.kotlin\.android/d' "$APP_BUILD_FILE"
+
+          echo "Building APK..."
           gradle assembleDebug --no-daemon
 
           APK="$(find . -type f -path "*/build/outputs/apk/debug/*.apk" | head -n 1)"
