@@ -8,10 +8,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Unzip project
-        run: unzip RoseController-Prototype-0.6.zip -d project
+        run: unzip -q RoseController-Prototype-0.6.zip -d project
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -19,25 +20,31 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build APK
-        run: |
-          GRADLEW=$(find project -name gradlew -type f | head -n 1)
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.9'
 
-          if [ -z "$GRADLEW" ]; then
-            echo "gradlew not found"
-            find project -maxdepth 5 -type f
+      - name: Build APK
+        shell: bash
+        run: |
+          PROJECT_DIR="$(find project -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit | xargs -r dirname)"
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "Android Gradle project not found"
+            find project -maxdepth 6 -type f | sort
             exit 1
           fi
 
-          chmod +x "$GRADLEW"
-          PROJECT_DIR=$(dirname "$GRADLEW")
+          echo "Building from: $PROJECT_DIR"
           cd "$PROJECT_DIR"
-          ./gradlew assembleDebug
+          gradle assembleDebug --no-daemon
 
-          APK=$(find . -path "*/build/outputs/apk/debug/*.apk" -type f | head -n 1)
+          APK="$(find . -type f -path "*/build/outputs/apk/debug/*.apk" | head -n 1)"
 
           if [ -z "$APK" ]; then
             echo "APK not found"
+            find . -type f -path "*/build/outputs/*/*.apk" | sort
             exit 1
           fi
 
